@@ -1,0 +1,6 @@
+{
+  "name": "LifeTrack",
+  "description": "Універсальний трекер життя: фінанси, харчування, здоров'я, звички, цілі та розумний аналіз з AI",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,229 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+             (!('currency' in data) || (data.currency is string && data.currency.size() <= 10)) &&
+             (!('themeMode' in data) || (data.themeMode is string && data.themeMode.size() <= 20));
+    }
+
+    function isValidTransaction(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.type is string && (data.type == 'income' || data.type == 'expense') &&
+             data.amount is number && data.amount >= 0 &&
+             data.category is string && data.category.size() >= 1 && data.category.size() <= 50 &&
+             data.date is string && data.date.size() >= 8 && data.date.size() <= 20 &&
+             (!('note' in data) || (data.note is string && data.note.size() <= 500));
+    }
+
+    function isValidMeal(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 100 &&
+             data.calories is int && data.calories >= 0 &&
+             data.mealType is string && data.mealType.size() <= 30 &&
+             data.date is string && data.date.size() >= 8 && data.date.size() <= 20 &&
+             (!('time' in data) || (data.time is string && data.time.size() <= 20)) &&
+             (!('protein' in data) || data.protein is number) &&
+             (!('fat' in data) || data.fat is number) &&
+             (!('carbs' in data) || data.carbs is number);
+    }
+
+    function isValidDailyHealth(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.date is string && data.date.size() >= 8 && data.date.size() <= 20 &&
+             data.waterMl is int && data.waterMl >= 0 &&
+             data.waterGoalMl is int && data.waterGoalMl >= 0 &&
+             (!('steps' in data) || (data.steps is int && data.steps >= 0)) &&
+             (!('workoutMinutes' in data) || (data.workoutMinutes is int && data.workoutMinutes >= 0)) &&
+             (!('caloriesBurned' in data) || (data.caloriesBurned is int && data.caloriesBurned >= 0)) &&
+             (!('sleepHours' in data) || (data.sleepHours is number && data.sleepHours >= 0)) &&
+             (!('weightKg' in data) || (data.weightKg is number && data.weightKg >= 0));
+    }
+
+    function isValidHabit(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             (!('targetValue' in data) || data.targetValue is int) &&
+             (!('unit' in data) || (data.unit is string && data.unit.size() <= 30)) &&
+             (!('frequency' in data) || (data.frequency is string && data.frequency.size() <= 30)) &&
+             (!('icon' in data) || (data.icon is string && data.icon.size() <= 50)) &&
+             (!('currentStreak' in data) || (data.currentStreak is int && data.currentStreak >= 0)) &&
+             (!('bestStreak' in data) || (data.bestStreak is int && data.bestStreak >= 0));
+    }
+
+    function isValidHabitLog(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.habitId is string && data.habitId.size() <= 128 &&
+             data.date is string && data.date.size() >= 8 && data.date.size() <= 20 &&
+             data.completed is bool &&
+             (!('value' in data) || data.value is number);
+    }
+
+    function isValidGoal(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.category is string && data.category.size() <= 50 &&
+             data.targetValue is number && data.targetValue >= 0 &&
+             data.currentValue is number && data.currentValue >= 0 &&
+             data.status is string && (data.status == 'in_progress' || data.status == 'completed' || data.status == 'paused') &&
+             (!('unit' in data) || (data.unit is string && data.unit.size() <= 30)) &&
+             (!('deadline' in data) || (data.deadline is string && data.deadline.size() <= 30));
+    }
+
+    function isValidJournalEntry(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.date is string && data.date.size() >= 8 && data.date.size() <= 20 &&
+             data.mood is string && data.mood.size() <= 30 &&
+             data.content is string && data.content.size() <= 5000 &&
+             (!('highlight' in data) || (data.highlight is string && data.highlight.size() <= 500));
+    }
+
+    // User Profile Document
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow update: if isOwner(userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+      allow delete: if isOwner(userId);
+
+      // Financial Transactions Subcollection
+      match /transactions/{transactionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(transactionId) &&
+                         isValidTransaction(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(transactionId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidTransaction(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(transactionId);
+      }
+
+      // Meal Subcollection
+      match /meals/{mealId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(mealId) &&
+                         isValidMeal(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(mealId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidMeal(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(mealId);
+      }
+
+      // Daily Health & Hydration Subcollection
+      match /dailyHealth/{dateId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(dateId) &&
+                         isValidDailyHealth(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(dateId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidDailyHealth(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(dateId);
+      }
+
+      // Habits Subcollection
+      match /habits/{habitId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(habitId) &&
+                         isValidHabit(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(habitId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidHabit(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(habitId);
+      }
+
+      // Habit Logs Subcollection
+      match /habitLogs/{logId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(logId) &&
+                         isValidHabitLog(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(logId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidHabitLog(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(logId);
+      }
+
+      // Goals Subcollection
+      match /goals/{goalId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(goalId) &&
+                         isValidGoal(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(goalId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidGoal(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(goalId);
+      }
+
+      // Journal Subcollection
+      match /journal/{entryId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(entryId) &&
+                         isValidJournalEntry(incoming()) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow update: if isOwner(userId) && isValidId(entryId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         isValidJournalEntry(incoming()) &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time;
+        allow delete: if isOwner(userId) && isValidId(entryId);
+      }
+    }
+  }
+}

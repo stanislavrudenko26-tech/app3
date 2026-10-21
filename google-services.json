@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "321378385950",
+    "project_id": "gen-lang-client-0947771371",
+    "storage_bucket": "gen-lang-client-0947771371.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:321378385950:android:9df05c213a4991f765ee0f",
+        "android_client_info": {
+          "package_name": "com.aistudio.lifetrack.trkyve"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "321378385950-nmlqtoul1p06dgob8sa4soiam4l1ur7i.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aistudio.lifetrack.trkyve",
+            "certificate_hash": "3f7b4147ba0a6ee546b6fa1727a90d8679113609"
+          }
+        },
+        {
+          "client_id": "321378385950-0hjufmm400ppl2bc0alnptcnglgnvfu4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDr871XU-ZbrB73dZe9ioILlAvuYkR4Cpg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "321378385950-0hjufmm400ppl2bc0alnptcnglgnvfu4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
