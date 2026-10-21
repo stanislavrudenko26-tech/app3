@@ -1,0 +1,65 @@
+workflows:
+  ios-simulator-debug:
+    name: LifeTrack iOS Simulator Debug
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+      - name: Generate Xcode project
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcodegen generate --spec project.yml
+      - name: Build iOS Simulator app
+        script: |
+          xcodebuild \
+            -project "$CM_BUILD_DIR/LifeTrack.xcodeproj" \
+            -scheme LifeTrack \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$CM_BUILD_DIR/build/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+    artifacts:
+      - build/DerivedData/Build/Products/Debug-iphonesimulator/LifeTrack.app
+      - /tmp/xcodebuild_logs/*.log
+
+  ios-device-ipa:
+    name: LifeTrack signed iOS IPA
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.aistudio.lifetrack.trkyve
+    scripts:
+      - name: Install XcodeGen
+        script: |
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+      - name: Generate Xcode project
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcodegen generate --spec project.yml
+      - name: Apply signing profiles
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcode-project use-profiles
+      - name: Build signed IPA
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcode-project build-ipa \
+            --project "$CM_BUILD_DIR/LifeTrack.xcodeproj" \
+            --scheme LifeTrack
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
