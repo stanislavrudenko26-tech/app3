@@ -1,0 +1,62 @@
+name: LifeTrack
+
+options:
+  bundleIdPrefix: com.aistudio
+  deploymentTarget:
+    iOS: "16.0"
+
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.aistudio.lifetrack.trkyve
+    PRODUCT_NAME: LifeTrack
+    SWIFT_VERSION: "5.0"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    GENERATE_INFOPLIST_FILE: YES
+    INFOPLIST_KEY_CFBundleDisplayName: LifeTrack
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  LifeTrack:
+    type: application
+    platform: iOS
+    sources:
+      - path: AnalyticsScreenView.swift
+      - path: CommonViews.swift
+      - path: FinanceCalculator.swift
+      - path: FinanceScreenView.swift
+      - path: GeminiAiService.swift
+      - path: HabitStreakCalculator.swift
+      - path: HabitsScreenView.swift
+      - path: HomeScreenView.swift
+      - path: LifeTrackApp.swift
+      - path: LifeTrackViewModel.swift
+      - path: MainTabView.swift
+      - path: Models.swift
+      - path: NutritionHealthScreenView.swift
+      - path: ProfileScreenView.swift
+      - path: Theme.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aistudio.lifetrack.trkyve
+        SWIFT_VERSION: "5.0"
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: LifeTrack
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_STYLE: Automatic
+
+schemes:
+  LifeTrack:
+    build:
+      targets:
+        LifeTrack: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+
