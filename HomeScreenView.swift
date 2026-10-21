@@ -201,7 +201,7 @@ struct HomeScreenView: View {
                 }
                 .onTapGesture { onSelectTab(2) }
                 
-                Spacer(modifier = Modifier.height(60))
+                Spacer(minLength: 60)
             }
             .padding(.horizontal, 20)
         }
